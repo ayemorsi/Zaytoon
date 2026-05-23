@@ -34,6 +34,14 @@
             "imageWidth": 76
           }
         }
+      ],
+      "@stripe/stripe-react-native",
+      [
+        "expo-notifications",
+        {
+          "color": "#284726",
+          "sounds": []
+        }
       ]
     ],
     "experiments": {
