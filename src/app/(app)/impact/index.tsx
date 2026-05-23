@@ -6,6 +6,24 @@ import { useEffect, useState } from 'react';
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 
+type ImpactStory = {
+  id: string;
+  emoji: string;
+  title: string;
+  body: string;
+  cause_tag: string;
+  created_at: string;
+  nonprofits: { name: string } | null;
+};
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const hours = Math.floor(diff / 3_600_000);
+  if (hours < 24) return hours <= 1 ? '1 hour ago' : `${hours} hours ago`;
+  const days = Math.floor(hours / 24);
+  return days === 1 ? '1 day ago' : `${days} days ago`;
+}
+
 export default function ImpactScreen() {
   const scheme = useColorScheme() ?? 'light';
   const c = Colors[scheme];
@@ -13,19 +31,31 @@ export default function ImpactScreen() {
   const [totalDonated, setTotalDonated] = useState(0);
   const [donationCount, setDonationCount] = useState(0);
   const [nonprofitCount, setNonprofitCount] = useState(0);
+  const [stories, setStories] = useState<ImpactStory[]>([]);
 
   useEffect(() => {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [dRes, npRes] = await Promise.all([
+      const [dRes, npRes, allocRes] = await Promise.all([
         supabase.from('donations').select('amount').eq('user_id', user.id).eq('status', 'completed'),
         supabase.from('user_charity_allocations').select('id', { count: 'exact' }).eq('user_id', user.id),
+        supabase.from('user_charity_allocations').select('nonprofit_id').eq('user_id', user.id),
       ]);
       const total = (dRes.data ?? []).reduce((s: number, d: any) => s + d.amount, 0);
       setTotalDonated(Math.round(total * 100) / 100);
       setDonationCount(dRes.data?.length ?? 0);
       setNonprofitCount(npRes.count ?? 0);
+
+      const ids = (allocRes.data ?? []).map((a: any) => a.nonprofit_id);
+      const baseQ = supabase
+        .from('impact_stories')
+        .select('*, nonprofits(name)')
+        .order('created_at', { ascending: false });
+      const { data: storyData } = ids.length
+        ? await baseQ.in('nonprofit_id', ids).limit(5)
+        : await baseQ.limit(3);
+      setStories((storyData ?? []) as ImpactStory[]);
     }
     load();
   }, []);
@@ -104,46 +134,40 @@ export default function ImpactScreen() {
             <Text style={[styles.quoteAttr, { color: c.textMuted }]}>— Prophet Muhammad ﷺ</Text>
           </View>
 
-          {/* Impact Updates placeholder */}
+          {/* Impact Updates */}
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: c.primary }]}>Impact Updates</Text>
             <Text style={[styles.sectionSub, { color: c.textMuted }]}>Stories from your aid</Text>
 
-            {[
-              {
-                emoji: '🍞',
-                org: 'Islamic Relief USA',
-                title: 'Fresh Bread for 50 Families',
-                body: 'Your round-ups helped run our community kitchen for an extra day, providing warm meals to 50 local families.',
-                tag: 'Food Security',
-                ago: '2 days ago',
-              },
-              {
-                emoji: '📚',
-                org: 'Penny Appeal USA',
-                title: 'New Supplies for the Semester',
-                body: 'Collective round-ups fully funded notebooks, pencils, and learning materials for two classrooms.',
-                tag: 'Education',
-                ago: '1 week ago',
-              },
-            ].map((update) => (
-              <View key={update.title} style={[styles.updateCard, { backgroundColor: c.surfaceWhite }]}>
-                <View style={[styles.updateIcon, { backgroundColor: c.secondaryContainer }]}>
-                  <Text style={styles.updateEmoji}>{update.emoji}</Text>
-                </View>
-                <View style={styles.updateInfo}>
-                  <Text style={[styles.updateOrg, { color: c.primary }]}>{update.org}</Text>
-                  <Text style={[styles.updateTitle, { color: c.onSurface }]}>{update.title}</Text>
-                  <Text style={[styles.updateBody, { color: c.textMuted }]} numberOfLines={3}>{update.body}</Text>
-                  <View style={styles.updateMeta}>
-                    <View style={[styles.updateTag, { backgroundColor: c.surfaceContainer }]}>
-                      <Text style={[styles.updateTagText, { color: c.textMuted }]}>{update.tag}</Text>
+            {stories.length === 0 ? (
+              <View style={[styles.emptyCard, { backgroundColor: c.surfaceWhite }]}>
+                <Text style={styles.emptyEmoji}>🌱</Text>
+                <Text style={[styles.emptyText, { color: c.textMuted }]}>
+                  Impact updates will appear here once your nonprofits share stories.
+                </Text>
+              </View>
+            ) : (
+              stories.map((update) => (
+                <View key={update.id} style={[styles.updateCard, { backgroundColor: c.surfaceWhite }]}>
+                  <View style={[styles.updateIcon, { backgroundColor: c.secondaryContainer }]}>
+                    <Text style={styles.updateEmoji}>{update.emoji}</Text>
+                  </View>
+                  <View style={styles.updateInfo}>
+                    <Text style={[styles.updateOrg, { color: c.primary }]}>
+                      {update.nonprofits?.name ?? ''}
+                    </Text>
+                    <Text style={[styles.updateTitle, { color: c.onSurface }]}>{update.title}</Text>
+                    <Text style={[styles.updateBody, { color: c.textMuted }]} numberOfLines={3}>{update.body}</Text>
+                    <View style={styles.updateMeta}>
+                      <View style={[styles.updateTag, { backgroundColor: c.surfaceContainer }]}>
+                        <Text style={[styles.updateTagText, { color: c.textMuted }]}>{update.cause_tag}</Text>
+                      </View>
+                      <Text style={[styles.updateAgo, { color: c.textMuted }]}>{timeAgo(update.created_at)}</Text>
                     </View>
-                    <Text style={[styles.updateAgo, { color: c.textMuted }]}>{update.ago}</Text>
                   </View>
                 </View>
-              </View>
-            ))}
+              ))
+            )}
           </View>
         </View>
       </ScrollView>
@@ -210,6 +234,14 @@ const styles = StyleSheet.create({
   quoteText: { fontSize: 16, fontWeight: '600', textAlign: 'center', lineHeight: 24, fontStyle: 'italic' },
   quoteAttr: { fontSize: 13 },
   section: { gap: DesignSpacing.stackGapMd },
+  emptyCard: {
+    padding: DesignSpacing.cardPadding,
+    borderRadius: BorderRadius.xxl,
+    alignItems: 'center',
+    gap: 10,
+  },
+  emptyEmoji: { fontSize: 32 },
+  emptyText: { fontSize: 14, lineHeight: 20, textAlign: 'center' },
   sectionTitle: { fontSize: 20, fontWeight: '700' },
   sectionSub: { fontSize: 13, marginTop: -8 },
   updateCard: {
