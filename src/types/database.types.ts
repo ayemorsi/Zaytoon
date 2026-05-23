@@ -289,6 +289,35 @@ export interface Database {
           created_at?: string;
         };
       };
+      impact_stories: {
+        Row: {
+          id: string;
+          nonprofit_id: string | null;
+          emoji: string;
+          title: string;
+          body: string;
+          cause_tag: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nonprofit_id?: string | null;
+          emoji: string;
+          title: string;
+          body: string;
+          cause_tag: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          nonprofit_id?: string | null;
+          emoji?: string;
+          title?: string;
+          body?: string;
+          cause_tag?: string;
+          created_at?: string;
+        };
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

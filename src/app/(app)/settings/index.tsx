@@ -211,7 +211,7 @@ export default function SettingsScreen() {
               emoji="❓"
               title="Help & FAQ"
               chevron
-              onPress={() => {}}
+              onPress={() => router.push('/(app)/settings/help')}
               colors={c}
               last
             />

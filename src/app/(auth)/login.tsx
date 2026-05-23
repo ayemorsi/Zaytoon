@@ -15,6 +15,7 @@ import { useColorScheme } from 'react-native';
 import { useState } from 'react';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -42,6 +43,29 @@ export default function LoginScreen() {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) setError(error.message);
     setLoading(false);
+  }
+
+  async function handleAppleLogin() {
+    setLoading(true);
+    setError('');
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) throw new Error('No identity token returned from Apple.');
+      const { error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+      if (error) setError(error.message);
+    } catch (err: any) {
+      if (err?.code !== 'ERR_REQUEST_CANCELED') setError(err?.message ?? 'Apple Sign-In failed.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleGoogleLogin() {
@@ -107,13 +131,17 @@ export default function LoginScreen() {
           </Pressable>
 
           {Platform.OS === 'ios' && (
-            <Pressable
-              style={[styles.oauthBtn, { borderColor: c.outlineVariant, backgroundColor: c.surfaceContainerLow }]}
-              onPress={() => {/* Apple handled in signup too */}}
-            >
-              <Text style={styles.oauthIcon}>🍎</Text>
-              <Text style={[styles.oauthText, { color: c.onSurface }]}>Continue with Apple</Text>
-            </Pressable>
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={
+                scheme === 'dark'
+                  ? AppleAuthentication.AppleAuthenticationButtonStyle.WHITE
+                  : AppleAuthentication.AppleAuthenticationButtonStyle.BLACK
+              }
+              cornerRadius={BorderRadius.lg}
+              style={styles.appleBtn}
+              onPress={handleAppleLogin}
+            />
           )}
 
           <Pressable
@@ -211,6 +239,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 32, fontWeight: '700', letterSpacing: -0.5, marginBottom: 4, marginTop: 8 },
   subtitle: { fontSize: 16, lineHeight: 24, marginBottom: 32 },
   oauthStack: { gap: DesignSpacing.stackGapMd },
+  appleBtn: { height: 50 },
   oauthBtn: {
     flexDirection: 'row',
     alignItems: 'center',

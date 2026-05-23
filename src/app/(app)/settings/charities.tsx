@@ -29,6 +29,7 @@ export default function EditCharitiesScreen() {
 
   const [nonprofits, setNonprofits] = useState<Nonprofit[]>(SEED_NONPROFITS);
   const [selected, setSelected] = useState<string[]>([]);
+  const [splitMap, setSplitMap] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -40,33 +41,73 @@ export default function EditCharitiesScreen() {
 
       const [npsRes, allocRes] = await Promise.all([
         supabase.from('nonprofits').select('*').eq('is_active', true).eq('is_verified', true),
-        supabase.from('user_charity_allocations').select('nonprofit_id').eq('user_id', user.id),
+        supabase.from('user_charity_allocations').select('nonprofit_id, split_percentage').eq('user_id', user.id),
       ]);
 
       if (npsRes.data && npsRes.data.length > 0) {
         setNonprofits(npsRes.data as Nonprofit[]);
       }
-      setSelected((allocRes.data ?? []).map((a) => a.nonprofit_id));
+      const allocs = allocRes.data ?? [];
+      const ids = allocs.map((a) => a.nonprofit_id);
+      setSelected(ids);
+
+      // If stored percentages are non-zero use them, otherwise default to equal split
+      const hasCustom = allocs.some((a) => a.split_percentage > 0);
+      if (hasCustom) {
+        const map: Record<string, number> = {};
+        allocs.forEach((a) => { map[a.nonprofit_id] = a.split_percentage; });
+        setSplitMap(map);
+      } else if (ids.length > 0) {
+        const equal = Math.floor(100 / ids.length);
+        const remainder = 100 - equal * ids.length;
+        const map: Record<string, number> = {};
+        ids.forEach((id, i) => { map[id] = equal + (i === 0 ? remainder : 0); });
+        setSplitMap(map);
+      }
+
       setLoading(false);
     }
     load();
   }, []);
 
   function toggle(id: string) {
-    setSelected((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
-    );
+    setSelected((prev) => {
+      const next = prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id];
+      // Rebalance split to equal whenever selection changes
+      if (next.length === 0) { setSplitMap({}); return next; }
+      const equal = Math.floor(100 / next.length);
+      const remainder = 100 - equal * next.length;
+      const map: Record<string, number> = {};
+      next.forEach((sid, i) => { map[sid] = equal + (i === 0 ? remainder : 0); });
+      setSplitMap(map);
+      return next;
+    });
   }
 
+  function adjustSplit(id: string, delta: number) {
+    setSplitMap((prev) => {
+      const current = prev[id] ?? 0;
+      const next = Math.max(0, Math.min(100, current + delta));
+      return { ...prev, [id]: next };
+    });
+  }
+
+  const splitTotal = selected.reduce((s, id) => s + (splitMap[id] ?? 0), 0);
+  const splitValid = selected.length === 0 || splitTotal === 100;
+
   async function handleSave() {
-    if (selected.length === 0) return;
+    if (selected.length === 0 || !splitValid) return;
     setSaving(true);
 
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       await supabase.from('user_charity_allocations').delete().eq('user_id', user.id);
       await supabase.from('user_charity_allocations').insert(
-        selected.map((id) => ({ user_id: user.id, nonprofit_id: id, split_percentage: 0 }))
+        selected.map((id) => ({
+          user_id: user.id,
+          nonprofit_id: id,
+          split_percentage: splitMap[id] ?? 0,
+        }))
       );
     }
 
@@ -92,7 +133,7 @@ export default function EditCharitiesScreen() {
         <>
           <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
             <Text style={[styles.subtitle, { color: c.textMuted }]}>
-              Your donations will be split equally among selected organizations.
+              Select nonprofits and adjust how your donations are split between them.
             </Text>
 
             <View style={styles.list}>
@@ -143,6 +184,28 @@ export default function EditCharitiesScreen() {
                     {np.ein && (
                       <Text style={[styles.ein, { color: c.outline }]}>EIN: {np.ein}</Text>
                     )}
+                    {isSelected && (
+                      <View style={[styles.splitRow, { borderTopColor: c.outlineVariant }]}>
+                        <Text style={[styles.splitLabel, { color: c.textMuted }]}>Split</Text>
+                        <Pressable
+                          style={[styles.splitBtn, { backgroundColor: c.surfaceContainer }]}
+                          onPress={() => adjustSplit(np.id, -5)}
+                          hitSlop={8}
+                        >
+                          <Text style={[styles.splitBtnText, { color: c.onSurface }]}>−</Text>
+                        </Pressable>
+                        <Text style={[styles.splitValue, { color: c.primary }]}>
+                          {splitMap[np.id] ?? 0}%
+                        </Text>
+                        <Pressable
+                          style={[styles.splitBtn, { backgroundColor: c.surfaceContainer }]}
+                          onPress={() => adjustSplit(np.id, 5)}
+                          hitSlop={8}
+                        >
+                          <Text style={[styles.splitBtnText, { color: c.onSurface }]}>+</Text>
+                        </Pressable>
+                      </View>
+                    )}
                   </Pressable>
                 );
               })}
@@ -150,19 +213,23 @@ export default function EditCharitiesScreen() {
           </ScrollView>
 
           <View style={[styles.footer, { backgroundColor: c.surface }]}>
-            <Text style={[styles.selectionCount, { color: c.textMuted }]}>
-              {selected.length === 0
-                ? 'Select at least one nonprofit'
-                : `${selected.length} nonprofit${selected.length > 1 ? 's' : ''} selected — equal split`}
-            </Text>
+            {selected.length === 0 ? (
+              <Text style={[styles.selectionCount, { color: c.textMuted }]}>
+                Select at least one nonprofit
+              </Text>
+            ) : (
+              <Text style={[styles.selectionCount, { color: splitValid ? c.successFresh : c.error }]}>
+                Total split: {splitTotal}%{splitValid ? ' ✓' : ' — must equal 100%'}
+              </Text>
+            )}
             <Pressable
               style={[
                 styles.primaryBtn,
                 { backgroundColor: saved ? c.successFresh : c.primary },
-                (saving || selected.length === 0) && { opacity: 0.5 },
+                (saving || selected.length === 0 || !splitValid) && { opacity: 0.5 },
               ]}
               onPress={handleSave}
-              disabled={saving || selected.length === 0}
+              disabled={saving || selected.length === 0 || !splitValid}
             >
               {saving
                 ? <ActivityIndicator color={c.onPrimary} />
@@ -236,6 +303,25 @@ const styles = StyleSheet.create({
   selectCheck: { color: '#fff', fontSize: 12, fontWeight: '700' },
   cardDesc: { fontSize: 13, lineHeight: 18 },
   ein: { fontSize: 11, fontWeight: '500' },
+  splitRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 10,
+    paddingTop: 10,
+    marginTop: 4,
+    borderTopWidth: 1,
+  },
+  splitLabel: { fontSize: 13, fontWeight: '600', marginRight: 'auto' },
+  splitBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  splitBtnText: { fontSize: 18, fontWeight: '500', lineHeight: 22 },
+  splitValue: { fontSize: 16, fontWeight: '700', minWidth: 44, textAlign: 'center' },
   footer: {
     paddingHorizontal: DesignSpacing.containerMargin,
     paddingBottom: 32,
