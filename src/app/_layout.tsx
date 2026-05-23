@@ -1,12 +1,10 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { StripeProvider } from '@stripe/stripe-react-native';
 
 import { supabase } from '@/lib/supabase';
-import { STRIPE_PUBLISHABLE_KEY } from '@/lib/stripe';
 import {
   registerForPushNotifications,
   subscribeToPushTokenRefresh,
@@ -27,13 +25,11 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <AuthGate />
-        </ThemeProvider>
-      </QueryClientProvider>
-    </StripeProvider>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <AuthGate />
+      </ThemeProvider>
+    </QueryClientProvider>
   );
 }
 
