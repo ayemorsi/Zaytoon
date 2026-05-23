@@ -29,6 +29,13 @@ export async function registerForPushNotifications(): Promise<void> {
     return;
   }
 
+  // Expo Go does not support remote push notifications — skip silently
+  const isExpoGo = Constants.appOwnership === 'expo';
+  if (isExpoGo) {
+    console.log('[notifications] Skipping push registration — Expo Go not supported');
+    return;
+  }
+
   // Android 13+ requires explicit permission
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
