@@ -96,24 +96,53 @@ Deno.serve(async (req: Request) => {
     // 4. Store in DB using service role (bypasses RLS)
     const admin = getAdminClient();
 
-    const { data: linkedAccount, error: dbError } = await admin
+    // Check if this item_id already exists (re-link after expiry/revocation)
+    const { data: existing } = await admin
       .from('linked_accounts')
-      .insert({
-        user_id: userId,
-        plaid_item_id: item_id,
-        plaid_access_token: access_token, // TODO: encrypt with Supabase Vault in production
-        plaid_account_id: plaidAccountId,
-        institution_name: institutionName,
-        mask,
-        account_type: accountType,
-        is_active: true,
-      })
       .select('id, institution_name, mask, account_type')
-      .single();
+      .eq('plaid_item_id', item_id)
+      .eq('user_id', userId)
+      .maybeSingle();
 
-    if (dbError) {
-      console.error('[plaid-exchange-token] DB insert error:', dbError);
-      return errorResponse('Failed to save account', 500);
+    let linkedAccount: { id: string; institution_name: string; mask: string; account_type: string };
+
+    if (existing) {
+      // Re-link: restore the existing account without creating a duplicate
+      const { data: updated, error: updateError } = await admin
+        .from('linked_accounts')
+        .update({ is_active: true, plaid_access_token: access_token })
+        .eq('id', existing.id)
+        .select('id, institution_name, mask, account_type')
+        .single();
+
+      if (updateError || !updated) {
+        console.error('[plaid-exchange-token] DB update error:', updateError);
+        return errorResponse('Failed to restore account', 500);
+      }
+      linkedAccount = updated;
+      console.log(`[plaid-exchange-token] Re-linked existing account ${existing.id}`);
+    } else {
+      // Fresh link: insert new row
+      const { data: inserted, error: dbError } = await admin
+        .from('linked_accounts')
+        .insert({
+          user_id: userId,
+          plaid_item_id: item_id,
+          plaid_access_token: access_token, // TODO: encrypt with Supabase Vault before production
+          plaid_account_id: plaidAccountId,
+          institution_name: institutionName,
+          mask,
+          account_type: accountType,
+          is_active: true,
+        })
+        .select('id, institution_name, mask, account_type')
+        .single();
+
+      if (dbError || !inserted) {
+        console.error('[plaid-exchange-token] DB insert error:', dbError);
+        return errorResponse('Failed to save account', 500);
+      }
+      linkedAccount = inserted;
     }
 
     // 5. Return safe metadata only (never the access_token)

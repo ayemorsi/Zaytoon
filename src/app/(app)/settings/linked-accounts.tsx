@@ -24,17 +24,18 @@ export default function LinkedAccountsScreen() {
   const [loadingData, setLoadingData] = useState(true);
   const [addingAccount, setAddingAccount] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
+  const [reconnectingId, setReconnectingId] = useState<string | null>(null);
 
   async function loadAccounts() {
     setLoadingData(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setLoadingData(false); return; }
 
+    // Load all accounts (active and inactive) so user can reconnect broken ones
     const { data } = await supabase
       .from('linked_accounts')
       .select('id, institution_name, mask, account_type, is_active, created_at')
       .eq('user_id', user.id)
-      .eq('is_active', true)
       .order('created_at', { ascending: false });
 
     setAccounts((data ?? []) as LinkedAccount[]);
@@ -66,10 +67,9 @@ export default function LinkedAccountsScreen() {
     );
   }
 
-  async function handleAddAccount() {
-    setAddingAccount(true);
+  async function openPlaidLink(linkedAccountId?: string) {
     try {
-      const linkToken = await createLinkToken();
+      const linkToken = await createLinkToken(linkedAccountId);
       create({ token: linkToken });
 
       open({
@@ -83,17 +83,33 @@ export default function LinkedAccountsScreen() {
             Alert.alert('Connection failed', (err as Error).message ?? 'Please try again.');
           } finally {
             setAddingAccount(false);
+            setReconnectingId(null);
           }
         },
         onExit: (_exit: LinkExit) => {
           setAddingAccount(false);
+          setReconnectingId(null);
         },
       });
     } catch (err) {
       Alert.alert('Error', (err as Error).message ?? 'Could not start bank connection.');
       setAddingAccount(false);
+      setReconnectingId(null);
     }
   }
+
+  async function handleAddAccount() {
+    setAddingAccount(true);
+    await openPlaidLink();
+  }
+
+  async function handleReconnect(accountId: string) {
+    setReconnectingId(accountId);
+    await openPlaidLink(accountId);
+  }
+
+  const activeAccounts = accounts.filter((a) => a.is_active);
+  const inactiveAccounts = accounts.filter((a) => !a.is_active);
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: c.surface }]}>
@@ -111,7 +127,7 @@ export default function LinkedAccountsScreen() {
 
         {loadingData ? (
           <ActivityIndicator color={c.primary} style={{ marginTop: 32 }} />
-        ) : accounts.length === 0 ? (
+        ) : activeAccounts.length === 0 && inactiveAccounts.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: c.surfaceWhite }]}>
             <Text style={styles.emptyEmoji}>🏦</Text>
             <Text style={[styles.emptyTitle, { color: c.onSurface }]}>No accounts connected</Text>
@@ -120,38 +136,82 @@ export default function LinkedAccountsScreen() {
             </Text>
           </View>
         ) : (
-          <View style={[styles.card, { backgroundColor: c.surfaceWhite }]}>
-            {accounts.map((acc, idx) => (
-              <View
-                key={acc.id}
-                style={[
-                  styles.accountRow,
-                  idx < accounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.outlineVariant },
-                ]}
-              >
-                <View style={[styles.bankIcon, { backgroundColor: c.secondaryContainer }]}>
-                  <Text style={styles.bankEmoji}>🏦</Text>
-                </View>
-                <View style={styles.accountInfo}>
-                  <Text style={[styles.bankName, { color: c.onSurface }]}>{acc.institution_name}</Text>
-                  <Text style={[styles.accountMeta, { color: c.textMuted }]}>
-                    {acc.account_type} ••••{acc.mask}
-                  </Text>
-                </View>
-                {removingId === acc.id ? (
-                  <ActivityIndicator color={c.error} size="small" />
-                ) : (
-                  <Pressable
-                    style={styles.removeBtn}
-                    onPress={() => handleRemove(acc.id, acc.institution_name)}
-                    hitSlop={8}
+          <>
+            {activeAccounts.length > 0 && (
+              <View style={[styles.card, { backgroundColor: c.surfaceWhite }]}>
+                {activeAccounts.map((acc, idx) => (
+                  <View
+                    key={acc.id}
+                    style={[
+                      styles.accountRow,
+                      idx < activeAccounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.outlineVariant },
+                    ]}
                   >
-                    <Text style={[styles.removeText, { color: c.error }]}>Remove</Text>
-                  </Pressable>
-                )}
+                    <View style={[styles.bankIcon, { backgroundColor: c.secondaryContainer }]}>
+                      <Text style={styles.bankEmoji}>🏦</Text>
+                    </View>
+                    <View style={styles.accountInfo}>
+                      <Text style={[styles.bankName, { color: c.onSurface }]}>{acc.institution_name}</Text>
+                      <Text style={[styles.accountMeta, { color: c.textMuted }]}>
+                        {acc.account_type} ••••{acc.mask}
+                      </Text>
+                    </View>
+                    {removingId === acc.id ? (
+                      <ActivityIndicator color={c.error} size="small" />
+                    ) : (
+                      <Pressable
+                        style={styles.removeBtn}
+                        onPress={() => handleRemove(acc.id, acc.institution_name)}
+                        hitSlop={8}
+                      >
+                        <Text style={[styles.removeText, { color: c.error }]}>Remove</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
+            )}
+
+            {inactiveAccounts.length > 0 && (
+              <>
+                <Text style={[styles.sectionLabel, { color: c.textMuted, marginTop: 4 }]}>
+                  Needs Attention
+                </Text>
+                <View style={[styles.card, { backgroundColor: c.surfaceWhite }]}>
+                  {inactiveAccounts.map((acc, idx) => (
+                    <View
+                      key={acc.id}
+                      style={[
+                        styles.accountRow,
+                        idx < inactiveAccounts.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.outlineVariant },
+                      ]}
+                    >
+                      <View style={[styles.bankIcon, { backgroundColor: c.errorContainer }]}>
+                        <Text style={styles.bankEmoji}>⚠️</Text>
+                      </View>
+                      <View style={styles.accountInfo}>
+                        <Text style={[styles.bankName, { color: c.onSurface }]}>{acc.institution_name}</Text>
+                        <Text style={[styles.accountMeta, { color: c.error }]}>
+                          Connection lost · ••••{acc.mask}
+                        </Text>
+                      </View>
+                      {reconnectingId === acc.id ? (
+                        <ActivityIndicator color={c.primary} size="small" />
+                      ) : (
+                        <Pressable
+                          style={[styles.reconnectBtn, { backgroundColor: c.primaryContainer }]}
+                          onPress={() => handleReconnect(acc.id)}
+                          hitSlop={8}
+                        >
+                          <Text style={[styles.reconnectText, { color: c.primary }]}>Reconnect</Text>
+                        </Pressable>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+          </>
         )}
 
         {/* Add another account */}
@@ -231,6 +291,8 @@ const styles = StyleSheet.create({
   accountMeta: { fontSize: 13, marginTop: 2 },
   removeBtn: { paddingVertical: 4 },
   removeText: { fontSize: 14, fontWeight: '600' },
+  reconnectBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: BorderRadius.md },
+  reconnectText: { fontSize: 13, fontWeight: '700' },
   emptyCard: {
     borderRadius: BorderRadius.xxl,
     padding: 32,

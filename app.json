@@ -42,6 +42,14 @@
           "color": "#284726",
           "sounds": []
         }
+      ],
+      [
+        "react-native-plaid-link-sdk",
+        {
+          "ios": {
+            "faceIDPermission": "Allow Zaytoon to use Face ID to securely authenticate with your bank."
+          }
+        }
       ]
     ],
     "experiments": {

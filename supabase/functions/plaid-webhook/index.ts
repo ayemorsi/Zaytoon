@@ -247,7 +247,7 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // ── Handle ITEM_ERROR (access revoked by user at bank) ───────────────────
+  // ── Handle ITEM/ERROR (access revoked / token invalid) ───────────────────
   if (webhook_type === 'ITEM' && webhook_code === 'ERROR') {
     const { data: account } = await admin
       .from('linked_accounts')
@@ -268,6 +268,56 @@ Deno.serve(async (req: Request) => {
         'item_error',
         'Bank connection issue',
         'Your linked account needs attention. Tap to reconnect in Settings.',
+        { screen: 'linked-accounts' },
+        admin
+      );
+    }
+  }
+
+  // ── Handle ITEM/USER_PERMISSION_REVOKED (user removed access at bank) ────
+  if (webhook_type === 'ITEM' && webhook_code === 'USER_PERMISSION_REVOKED') {
+    const { data: account } = await admin
+      .from('linked_accounts')
+      .select('id, user_id')
+      .eq('plaid_item_id', item_id)
+      .single();
+
+    if (account) {
+      await admin
+        .from('linked_accounts')
+        .update({ is_active: false })
+        .eq('id', account.id);
+
+      console.log(`[plaid-webhook] Marked account ${account.id} inactive: user revoked permission`);
+
+      await sendNotificationToUser(
+        account.user_id,
+        'item_error',
+        'Bank access revoked',
+        'Your bank connection was removed. Tap to reconnect in Settings.',
+        { screen: 'linked-accounts' },
+        admin
+      );
+    }
+  }
+
+  // ── Handle ITEM/PENDING_EXPIRATION (bank requires re-auth within 7 days) ─
+  if (webhook_type === 'ITEM' && webhook_code === 'PENDING_EXPIRATION') {
+    const { data: account } = await admin
+      .from('linked_accounts')
+      .select('id, user_id')
+      .eq('plaid_item_id', item_id)
+      .single();
+
+    if (account) {
+      // Account still works — just warn the user so they can re-auth before it expires
+      console.log(`[plaid-webhook] Account ${account.id} pending expiration`);
+
+      await sendNotificationToUser(
+        account.user_id,
+        'item_error',
+        'Bank connection expiring soon',
+        'Your bank connection expires in 7 days. Tap to reconnect now.',
         { screen: 'linked-accounts' },
         admin
       );
