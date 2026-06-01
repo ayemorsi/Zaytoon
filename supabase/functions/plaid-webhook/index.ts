@@ -214,7 +214,7 @@ Deno.serve(async (req: Request) => {
     // Fetch the linked account for this item
     const { data: account, error: accError } = await admin
       .from('linked_accounts')
-      .select('id, user_id, plaid_access_token, plaid_sync_cursor')
+      .select('id, user_id, plaid_access_token_id, plaid_sync_cursor')
       .eq('plaid_item_id', item_id)
       .eq('is_active', true)
       .single();
@@ -224,9 +224,18 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ received: true }); // Acknowledge to avoid Plaid retrying
     }
 
+    // Decrypt the access token from vault
+    const { data: accessToken, error: vaultError } = await admin.rpc('get_plaid_access_token', {
+      secret_id: account.plaid_access_token_id,
+    });
+    if (vaultError || !accessToken) {
+      console.error('[plaid-webhook] Vault read failed for account:', account.id, vaultError);
+      return jsonResponse({ received: true });
+    }
+
     try {
       const newCursor = await syncTransactions(
-        account.plaid_access_token,
+        accessToken,
         account.plaid_sync_cursor ?? null,
         account.user_id,
         account.id
