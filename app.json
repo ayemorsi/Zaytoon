@@ -35,7 +35,13 @@
           }
         }
       ],
-      "@stripe/stripe-react-native",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.com.zaytoon.app",
+          "enableGooglePay": false
+        }
+      ],
       [
         "expo-notifications",
         {
@@ -43,14 +49,9 @@
           "sounds": []
         }
       ],
-      [
-        "react-native-plaid-link-sdk",
-        {
-          "ios": {
-            "faceIDPermission": "Allow Zaytoon to use Face ID to securely authenticate with your bank."
-          }
-        }
-      ]
+      "expo-font",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
