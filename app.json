@@ -8,9 +8,12 @@
     "scheme": "zaytoonapp",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.zaytoon.app",
+      "supportsTablet": false
     },
     "android": {
+      "package": "com.zaytoon.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -51,7 +54,15 @@
       ],
       "expo-font",
       "expo-secure-store",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "react-native-plaid-link-sdk",
+        {
+          "ios": {
+            "faceIDPermission": "Allow Zaytoon to use Face ID to securely authenticate with your bank."
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

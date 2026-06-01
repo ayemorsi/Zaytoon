@@ -99,7 +99,7 @@ Deno.serve(async (req: Request) => {
     // Check if this item_id already exists (re-link after expiry/revocation)
     const { data: existing } = await admin
       .from('linked_accounts')
-      .select('id, institution_name, mask, account_type')
+      .select('id, institution_name, mask, account_type, plaid_access_token_id')
       .eq('plaid_item_id', item_id)
       .eq('user_id', userId)
       .maybeSingle();
@@ -107,10 +107,19 @@ Deno.serve(async (req: Request) => {
     let linkedAccount: { id: string; institution_name: string; mask: string; account_type: string };
 
     if (existing) {
-      // Re-link: restore the existing account without creating a duplicate
+      // Re-link: rotate the vault secret in-place and restore the account
+      const { error: vaultError } = await admin.rpc('update_plaid_access_token', {
+        secret_id: existing.plaid_access_token_id,
+        new_token: access_token,
+      });
+      if (vaultError) {
+        console.error('[plaid-exchange-token] Vault update error:', vaultError);
+        return errorResponse('Failed to secure account token', 500);
+      }
+
       const { data: updated, error: updateError } = await admin
         .from('linked_accounts')
-        .update({ is_active: true, plaid_access_token: access_token })
+        .update({ is_active: true })
         .eq('id', existing.id)
         .select('id, institution_name, mask, account_type')
         .single();
@@ -122,13 +131,21 @@ Deno.serve(async (req: Request) => {
       linkedAccount = updated;
       console.log(`[plaid-exchange-token] Re-linked existing account ${existing.id}`);
     } else {
-      // Fresh link: insert new row
+      // Fresh link: store token in vault, then insert row with the vault secret ID
+      const { data: secretId, error: vaultError } = await admin.rpc('store_plaid_access_token', {
+        token: access_token,
+      });
+      if (vaultError || !secretId) {
+        console.error('[plaid-exchange-token] Vault store error:', vaultError);
+        return errorResponse('Failed to secure account token', 500);
+      }
+
       const { data: inserted, error: dbError } = await admin
         .from('linked_accounts')
         .insert({
           user_id: userId,
           plaid_item_id: item_id,
-          plaid_access_token: access_token, // TODO: encrypt with Supabase Vault before production
+          plaid_access_token_id: secretId,
           plaid_account_id: plaidAccountId,
           institution_name: institutionName,
           mask,

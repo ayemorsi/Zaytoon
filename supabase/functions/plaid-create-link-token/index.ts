@@ -36,11 +36,11 @@ Deno.serve(async (req: Request) => {
   let accessTokenForUpdate: string | null = null;
 
   if (linkedAccountId) {
-    // Verify the account belongs to this user and retrieve access token
+    // Verify the account belongs to this user, then decrypt the vault token
     const admin = getAdminClient();
     const { data: account, error } = await admin
       .from('linked_accounts')
-      .select('plaid_access_token')
+      .select('plaid_access_token_id')
       .eq('id', linkedAccountId)
       .eq('user_id', userId)
       .single();
@@ -48,7 +48,15 @@ Deno.serve(async (req: Request) => {
     if (error || !account) {
       return errorResponse('Account not found', 404);
     }
-    accessTokenForUpdate = account.plaid_access_token;
+
+    const { data: decryptedToken, error: vaultError } = await admin.rpc('get_plaid_access_token', {
+      secret_id: account.plaid_access_token_id,
+    });
+    if (vaultError || !decryptedToken) {
+      console.error('[plaid-create-link-token] Vault read error:', vaultError);
+      return errorResponse('Failed to retrieve account token', 500);
+    }
+    accessTokenForUpdate = decryptedToken;
   }
 
   try {
