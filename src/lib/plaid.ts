@@ -16,13 +16,16 @@ async function authHeaders(): Promise<HeadersInit> {
 
 /**
  * Calls the `plaid-create-link-token` Edge Function.
+ * Pass `linkedAccountId` to open Plaid in update mode (re-auth an existing item).
  * Returns the link_token needed to open the Plaid Link SDK.
  */
-export async function createLinkToken(): Promise<string> {
+export async function createLinkToken(linkedAccountId?: string): Promise<string> {
   const headers = await authHeaders();
+  const body = linkedAccountId ? JSON.stringify({ linked_account_id: linkedAccountId }) : undefined;
   const res = await fetch(`${SUPABASE_URL}/functions/v1/plaid-create-link-token`, {
     method: 'POST',
     headers,
+    body,
   });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error ?? 'Failed to create link token');
