@@ -113,25 +113,26 @@ export default function GivingScreen() {
                   <Text style={[styles.badgeText, { color: c.textMuted }]}>This Week</Text>
                 </View>
               </View>
-              {roundups.filter((r) => r.status === 'pending').length === 0 ? (
+              {roundups.filter((r) => r.status === 'pending' || r.status === 'included_in_batch').length === 0 ? (
                 <View style={[styles.emptyCard, { backgroundColor: c.surfaceWhite }]}>
                   <Text style={[styles.emptyText, { color: c.textMuted }]}>No pending round-ups yet.</Text>
                 </View>
               ) : (
                 <View style={[styles.listCard, { backgroundColor: c.surfaceWhite }]}>
-                  {roundups.filter((r) => r.status === 'pending').slice(0, 10).map((tx, i, arr) => (
+                  {roundups.filter((r) => r.status === 'pending' || r.status === 'included_in_batch').slice(0, 10).map((tx, i, arr) => (
                     <View
                       key={tx.id}
                       style={[styles.txRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.surfaceContainerHigh }]}
                     >
-                      <View style={[styles.txIcon, { backgroundColor: c.secondaryContainer }]}>
-                        <Ionicons name="bag-outline" size={22} color={c.primary} />
+                      <View style={[styles.txIcon, { backgroundColor: tx.status === 'included_in_batch' ? c.tertiaryFixed : c.secondaryContainer }]}>
+                        <Ionicons name={tx.status === 'included_in_batch' ? 'time-outline' : 'bag-outline'} size={22} color={c.primary} />
                       </View>
                       <View style={styles.txInfo}>
                         <Text style={[styles.txName, { color: c.onSurface }]}>{tx.merchant_name ?? 'Purchase'}</Text>
                         <Text style={[styles.txDate, { color: c.textMuted }]}>
                           {new Date(tx.transacted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                           {' · '}${tx.transaction_amount.toFixed(2)} purchase
+                          {tx.status === 'included_in_batch' ? ' · Processing' : ''}
                         </Text>
                       </View>
                       <Text style={[styles.txAmount, { color: c.primary }]}>+${tx.roundup_amount.toFixed(2)}</Text>
@@ -151,34 +152,43 @@ export default function GivingScreen() {
                   <Text style={[styles.badgeText, { color: c.textMuted }]}>Completed</Text>
                 </View>
               </View>
-              {batches.filter((b) => b.status === 'completed').length === 0 ? (
+              {batches.length === 0 ? (
                 <View style={[styles.emptyCard, { backgroundColor: c.surfaceWhite }]}>
                   <Text style={[styles.emptyText, { color: c.textMuted }]}>No donations processed yet.</Text>
                 </View>
               ) : (
                 <View style={[styles.listCard, { backgroundColor: c.surfaceWhite }]}>
-                  {batches.filter((b) => b.status === 'completed').map((batch, i, arr) => (
-                    <View
-                      key={batch.id}
-                      style={[styles.txRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.surfaceContainerHigh }]}
-                    >
-                      <View style={[styles.txIcon, { backgroundColor: c.tertiaryFixed }]}>
-                        <Ionicons name="checkmark-circle" size={22} color={c.successFresh} />
+                  {batches.map((batch, i, arr) => {
+                    const isCompleted = batch.status === 'completed';
+                    const isFailed = batch.status === 'failed';
+                    const iconName = isCompleted ? 'checkmark-circle' : isFailed ? 'close-circle' : 'time-outline';
+                    const iconColor = isCompleted ? c.successFresh : isFailed ? c.error : c.warningAmber;
+                    const iconBg = isCompleted ? c.tertiaryFixed : isFailed ? c.errorContainer : c.surfaceContainer;
+                    const statusLabel = isCompleted ? '✓ Sent' : isFailed ? 'Failed' : 'Processing…';
+                    const statusColor = isCompleted ? c.successFresh : isFailed ? c.error : c.warningAmber;
+                    return (
+                      <View
+                        key={batch.id}
+                        style={[styles.txRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.surfaceContainerHigh }]}
+                      >
+                        <View style={[styles.txIcon, { backgroundColor: iconBg }]}>
+                          <Ionicons name={iconName} size={22} color={iconColor} />
+                        </View>
+                        <View style={styles.txInfo}>
+                          <Text style={[styles.txName, { color: c.onSurface }]}>
+                            {batch.trigger_type === 'scheduled_friday' ? 'Friday Donation' : 'Threshold Donation'}
+                          </Text>
+                          <Text style={[styles.txDate, { color: c.textMuted }]}>
+                            {batch.processed_at ? new Date(batch.processed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : new Date(batch.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+                          </Text>
+                        </View>
+                        <View style={styles.txRight}>
+                          <Text style={[styles.txAmount, { color: c.onSurface }]}>${batch.total_amount.toFixed(2)}</Text>
+                          <Text style={[styles.txStatus, { color: statusColor }]}>{statusLabel}</Text>
+                        </View>
                       </View>
-                      <View style={styles.txInfo}>
-                        <Text style={[styles.txName, { color: c.onSurface }]}>
-                          {batch.trigger_type === 'scheduled_friday' ? 'Friday Donation' : 'Threshold Donation'}
-                        </Text>
-                        <Text style={[styles.txDate, { color: c.textMuted }]}>
-                          {batch.processed_at ? new Date(batch.processed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) : 'Processing'}
-                        </Text>
-                      </View>
-                      <View style={styles.txRight}>
-                        <Text style={[styles.txAmount, { color: c.onSurface }]}>${batch.total_amount.toFixed(2)}</Text>
-                        <Text style={[styles.txStatus, { color: c.successFresh }]}>✓ Sent</Text>
-                      </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               )}
             </View>
