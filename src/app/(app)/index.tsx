@@ -32,6 +32,7 @@ export default function HomeScreen() {
   const [prefs, setPrefs] = useState<DonationPreferences | null>(null);
   const [pendingBalance, setPendingBalance] = useState(0);
   const [totalDonated, setTotalDonated] = useState(0);
+  const [monthlyCommitted, setMonthlyCommitted] = useState(0);
   const [recentRoundups, setRecentRoundups] = useState<RoundupTransaction[]>([]);
   const [charityCount, setCharityCount] = useState(0);
   const [hasLinkedAccount, setHasLinkedAccount] = useState(false);
@@ -45,7 +46,10 @@ export default function HomeScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const [profileRes, prefsRes, pendingRes, totalRes, recentRes, charityRes, linkedRes] = await Promise.all([
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [profileRes, prefsRes, pendingRes, totalRes, recentRes, charityRes, linkedRes, batchRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('donation_preferences').select('*').eq('user_id', user.id).single(),
       supabase.from('roundup_transactions').select('roundup_amount, status').eq('user_id', user.id).in('status', ['pending', 'included_in_batch']),
@@ -53,6 +57,7 @@ export default function HomeScreen() {
       supabase.from('roundup_transactions').select('*').eq('user_id', user.id).order('transacted_at', { ascending: false }).limit(10),
       supabase.from('user_charity_allocations').select('id', { count: 'exact' }).eq('user_id', user.id),
       supabase.from('linked_accounts').select('id', { count: 'exact' }).eq('user_id', user.id).eq('is_active', true),
+      supabase.from('donation_batches').select('total_amount').eq('user_id', user.id).neq('status', 'failed').gte('created_at', startOfMonth),
     ]);
 
     if (profileRes.data) setProfile(profileRes.data as Profile);
@@ -63,6 +68,13 @@ export default function HomeScreen() {
 
     const total = (totalRes.data ?? []).reduce((sum: number, d: any) => sum + (d.amount ?? 0), 0);
     setTotalDonated(Math.round(total * 100) / 100);
+
+    // Monthly committed = batched/completed amounts this month + still-pending round-ups
+    const batchedThisMonth = (batchRes.data ?? []).reduce((sum: number, b: any) => sum + (b.total_amount ?? 0), 0);
+    const stillPending = (pendingRes.data ?? [])
+      .filter((r: any) => r.status === 'pending')
+      .reduce((sum: number, r: any) => sum + (r.roundup_amount ?? 0), 0);
+    setMonthlyCommitted(Math.round((batchedThisMonth + stillPending) * 100) / 100);
 
     setRecentRoundups((recentRes.data ?? []) as RoundupTransaction[]);
     setCharityCount(charityRes.count ?? 0);
@@ -179,7 +191,7 @@ export default function HomeScreen() {
                 <Text style={[styles.capSub, { color: c.textMuted }]}>Stay within your goals</Text>
               </View>
               <Text style={[styles.capAmounts, { color: c.primary }]}>
-                ${totalDonated.toFixed(0)}
+                ${monthlyCommitted.toFixed(0)}
                 <Text style={[styles.capTotal, { color: c.textMuted }]}>/${prefs?.monthly_cap ?? 50}</Text>
               </Text>
             </View>
@@ -187,13 +199,13 @@ export default function HomeScreen() {
               <View
                 style={[
                   styles.progressFill,
-                  { backgroundColor: c.primary, width: `${Math.min((totalDonated / (prefs?.monthly_cap ?? 50)) * 100, 100)}%` },
+                  { backgroundColor: c.primary, width: `${Math.min((monthlyCommitted / (prefs?.monthly_cap ?? 50)) * 100, 100)}%` },
                 ]}
               />
             </View>
             <View style={styles.capFooter}>
               <Text style={[styles.capFooterText, { color: c.textMuted }]}>
-                {Math.round((totalDonated / (prefs?.monthly_cap ?? 50)) * 100)}% reached
+                {Math.round((monthlyCommitted / (prefs?.monthly_cap ?? 50)) * 100)}% reached
               </Text>
               <Pressable onPress={togglePause} style={styles.pauseBtn}>
                 <Ionicons
