@@ -1,5 +1,6 @@
-import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors } from '@/constants/theme';
 
@@ -8,36 +9,57 @@ export default function AppTabs() {
   const c = Colors[scheme];
 
   return (
-    <NativeTabs
-      backgroundColor={c.surfaceWhite}
-      indicatorColor={c.secondaryContainer}
-      labelStyle={{ selected: { color: c.primary } }}>
-
-      <NativeTabs.Trigger name="index">
-        <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sfSymbol="house.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="giving/index">
-        <NativeTabs.Trigger.Label>Giving</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sfSymbol="heart.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="nonprofits/index">
-        <NativeTabs.Trigger.Label>Nonprofits</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sfSymbol="building.columns.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="impact/index">
-        <NativeTabs.Trigger.Label>Impact</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sfSymbol="leaf.fill" />
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="settings/index">
-        <NativeTabs.Trigger.Label>Settings</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon sfSymbol="gearshape.fill" />
-      </NativeTabs.Trigger>
-
-    </NativeTabs>
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: c.primary,
+        tabBarInactiveTintColor: c.textMuted,
+        tabBarStyle: {
+          backgroundColor: c.surfaceWhite,
+          borderTopColor: c.outlineVariant,
+          borderTopWidth: 1,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+        },
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color, size }) => <Ionicons name="home" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="giving/index"
+        options={{
+          title: 'Giving',
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="nonprofits/index"
+        options={{
+          title: 'Nonprofits',
+          tabBarIcon: ({ color, size }) => <Ionicons name="business" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="impact/index"
+        options={{
+          title: 'Impact',
+          tabBarIcon: ({ color, size }) => <Ionicons name="leaf" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="settings/index"
+        options={{
+          title: 'Settings',
+          tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
+        }}
+      />
+    </Tabs>
   );
 }

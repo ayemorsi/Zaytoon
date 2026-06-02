@@ -126,7 +126,7 @@ export default function HomeScreen() {
         {prefs?.is_paused && (
           <View style={[styles.pausedBanner, { backgroundColor: c.warningAmber + '22', borderColor: c.warningAmber }]}>
             <Text style={[styles.pausedText, { color: c.onSurface }]}>
-              ⏸ Giving is paused. Round-ups are not being collected.
+              Giving is paused. Round-ups are not being collected.
             </Text>
           </View>
         )}
@@ -141,7 +141,7 @@ export default function HomeScreen() {
               ${totalDonated.toFixed(2)}
             </Text>
             <Text style={[styles.impactSub, { color: c.primary }]}>
-              🫒 toward sadaqah this month
+              toward sadaqah this month
             </Text>
           </View>
 
@@ -192,9 +192,14 @@ export default function HomeScreen() {
               <Text style={[styles.capFooterText, { color: c.textMuted }]}>
                 {Math.round((totalDonated / (prefs?.monthly_cap ?? 50)) * 100)}% reached
               </Text>
-              <Pressable onPress={togglePause}>
+              <Pressable onPress={togglePause} style={styles.pauseBtn}>
+                <Ionicons
+                  name={prefs?.is_paused ? 'play-circle' : 'pause-circle'}
+                  size={16}
+                  color={prefs?.is_paused ? c.successFresh : c.danger}
+                />
                 <Text style={[styles.pauseLink, { color: prefs?.is_paused ? c.successFresh : c.danger }]}>
-                  {prefs?.is_paused ? '▶ Resume' : '⏸ Pause'}
+                  {prefs?.is_paused ? 'Resume' : 'Pause'}
                 </Text>
               </Pressable>
             </View>
@@ -374,6 +379,7 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', borderRadius: 6 },
   capFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   capFooterText: { fontSize: 12 },
+  pauseBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   pauseLink: { fontSize: 13, fontWeight: '700' },
   statsRow: { flexDirection: 'row', gap: DesignSpacing.stackGapMd },
   statCard: {
