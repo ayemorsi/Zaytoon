@@ -17,13 +17,19 @@ export default function CompleteScreen() {
 
   async function handleStartGiving() {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', user.id);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('profiles').update({ onboarding_complete: true }).eq('id', user.id);
+        store.reset();
+        // Refresh session so AuthGate's onAuthStateChange re-fetches the profile,
+        // sees onboarding_complete=true, and navigates to /(app)/ itself.
+        // This avoids the race where AuthGate still has onboardingComplete=false.
+        await supabase.auth.refreshSession();
+      }
+    } catch {
+      setLoading(false);
     }
-    store.reset();
-    setLoading(false);
-    router.replace('/(app)/');
   }
 
   return (
@@ -108,8 +114,8 @@ function SummaryRow({ emoji, label, value, colors: c }: {
   return (
     <View style={styles.summaryRow}>
       <Text style={styles.summaryEmoji}>{emoji}</Text>
-      <Text style={[styles.summaryLabel, { color: c.textMuted }]}>{label}</Text>
-      <Text style={[styles.summaryValue, { color: c.onSurface }]}>{value}</Text>
+      <Text style={[styles.summaryLabel, { color: c.textMuted }]} numberOfLines={1}>{label}</Text>
+      <Text style={[styles.summaryValue, { color: c.onSurface }]} numberOfLines={1} ellipsizeMode="tail">{value}</Text>
     </View>
   );
 }
@@ -141,8 +147,8 @@ const styles = StyleSheet.create({
   summaryRows: { gap: 12 },
   summaryRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   summaryEmoji: { fontSize: 16, width: 24 },
-  summaryLabel: { flex: 1, fontSize: 13, fontWeight: '500' },
-  summaryValue: { fontSize: 14, fontWeight: '700' },
+  summaryLabel: { width: 110, fontSize: 13, fontWeight: '500' },
+  summaryValue: { flex: 1, fontSize: 14, fontWeight: '700', textAlign: 'right' },
   trustNote: {
     padding: 16,
     borderRadius: BorderRadius.xl,
