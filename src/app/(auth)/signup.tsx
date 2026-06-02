@@ -85,7 +85,7 @@ export default function SignupScreen() {
             label="Full Name"
             value={fullName}
             onChangeText={setFullName}
-            placeholder="Ahmed Al-Farsi"
+            placeholder="First Last"
             error={errors.fullName}
             colors={c}
           />
