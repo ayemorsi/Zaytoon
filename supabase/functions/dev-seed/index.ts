@@ -72,29 +72,35 @@ Deno.serve(async (req: Request) => {
 
   const admin = getAdminClient();
 
-  // ── Fetch active linked account ───────────────────────────────────────────
+  // ── Fetch linked account (any, prefer active) ────────────────────────────
   const { data: accountRows, error: accErr } = await admin
     .from('linked_accounts')
-    .select('id')
+    .select('id, is_active')
     .eq('user_id', userId)
-    .eq('is_active', true)
-    .order('created_at', { ascending: true })
-    .limit(1);
+    .order('is_active', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(5);
 
   if (accErr) {
     console.error('[dev-seed] linked_accounts query error:', accErr);
     return errorResponse('Failed to fetch linked accounts', 500);
   }
 
+  console.log('[dev-seed] linked accounts found:', JSON.stringify(accountRows));
+
   const linkedAccountId = accountRows && accountRows.length > 0
     ? accountRows[0].id
     : null;
+
+  if (!linkedAccountId) {
+    return errorResponse('No linked account found for this user. Connect a bank account first in Settings.', 400);
+  }
 
   // ── Build fake transaction rows ───────────────────────────────────────────
   const now = Date.now();
   const rows: Array<{
     user_id: string;
-    linked_account_id: string | null;
+    linked_account_id: string;
     plaid_transaction_id: string;
     merchant_name: string;
     transaction_amount: number;
