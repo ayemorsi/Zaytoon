@@ -237,7 +237,7 @@ export default function HomeScreen() {
                 </Text>
                 <Pressable
                   style={[styles.emptyBtn, { backgroundColor: c.primary }]}
-                  onPress={() => router.push('/(app)/settings/')}
+                  onPress={() => router.push('/(app)/settings/linked-accounts')}
                 >
                   <Text style={[styles.emptyBtnText, { color: c.onPrimary }]}>Connect Account</Text>
                 </Pressable>

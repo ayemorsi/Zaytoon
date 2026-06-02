@@ -70,7 +70,15 @@ export default function LinkedAccountsScreen() {
 
   async function openPlaidLink(linkedAccountId?: string) {
     try {
-      const linkToken = await createLinkToken(linkedAccountId);
+      let linkToken: string;
+      try {
+        linkToken = await createLinkToken(linkedAccountId);
+      } catch (err) {
+        Alert.alert('Token Error', (err as Error).message ?? 'Could not get link token from server.');
+        setAddingAccount(false);
+        setReconnectingId(null);
+        return;
+      }
       create({ token: linkToken });
 
       open({
