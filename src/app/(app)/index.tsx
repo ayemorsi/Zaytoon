@@ -9,7 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
@@ -80,7 +80,7 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, []);
 
-  useEffect(() => { loadDashboard(); }, []);
+  useFocusEffect(useCallback(() => { loadDashboard(); }, []));
 
   async function togglePause() {
     if (!prefs) return;
