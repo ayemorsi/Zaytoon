@@ -48,7 +48,7 @@ export default function HomeScreen() {
     const [profileRes, prefsRes, pendingRes, totalRes, recentRes, charityRes, linkedRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('donation_preferences').select('*').eq('user_id', user.id).single(),
-      supabase.from('roundup_transactions').select('roundup_amount').eq('user_id', user.id).eq('status', 'pending'),
+      supabase.from('roundup_transactions').select('roundup_amount, status').eq('user_id', user.id).in('status', ['pending', 'included_in_batch']),
       supabase.from('donations').select('amount').eq('user_id', user.id).eq('status', 'completed'),
       supabase.from('roundup_transactions').select('*').eq('user_id', user.id).order('transacted_at', { ascending: false }).limit(10),
       supabase.from('user_charity_allocations').select('id', { count: 'exact' }).eq('user_id', user.id),
