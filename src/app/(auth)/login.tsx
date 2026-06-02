@@ -19,6 +19,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -114,7 +115,7 @@ export default function LoginScreen() {
       >
         {/* Back */}
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={[styles.backText, { color: c.onSurfaceVariant }]}>←</Text>
+          <Ionicons name="arrow-back" size={24} color={c.onSurfaceVariant} />
         </Pressable>
 
         <Text style={[styles.title, { color: c.primary }]}>Welcome back</Text>
@@ -148,7 +149,7 @@ export default function LoginScreen() {
             style={[styles.oauthBtn, { borderColor: c.outlineVariant, backgroundColor: c.surfaceContainerLow }]}
             onPress={() => router.push('/(auth)/verify-otp')}
           >
-            <Text style={styles.oauthIcon}>📱</Text>
+            <Ionicons name="phone-portrait-outline" size={20} color={c.onSurface} />
             <Text style={[styles.oauthText, { color: c.onSurface }]}>Continue with Phone</Text>
           </Pressable>
         </View>

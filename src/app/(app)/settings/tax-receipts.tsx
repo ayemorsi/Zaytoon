@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import {
@@ -94,7 +95,7 @@ export default function TaxReceiptsScreen() {
       {/* Header */}
       <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+          <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
         </Pressable>
         <Text style={[styles.navTitle, { color: c.onSurface }]}>Tax Receipts</Text>
         <View style={{ width: 60 }} />
@@ -154,7 +155,7 @@ export default function TaxReceiptsScreen() {
                     ]}
                   >
                     <View style={[styles.receiptIcon, { backgroundColor: c.secondaryContainer }]}>
-                      <Text style={styles.receiptEmoji}>🧾</Text>
+                      <Ionicons name="document-text-outline" size={22} color={c.primary} />
                     </View>
                     <View style={styles.receiptInfo}>
                       <Text style={[styles.receiptYear, { color: c.onSurface }]}>
@@ -183,7 +184,7 @@ export default function TaxReceiptsScreen() {
           {/* Empty state */}
           {receipts.length === 0 && hasPreviousYearReceipt === false && (
             <View style={[styles.emptyCard, { backgroundColor: c.surfaceWhite }]}>
-              <Text style={styles.emptyEmoji}>📄</Text>
+              <Ionicons name="document-outline" size={44} color={c.primary} />
               <Text style={[styles.emptyTitle, { color: c.onSurface }]}>No receipts yet</Text>
               <Text style={[styles.emptyBody, { color: c.textMuted }]}>
                 Once you complete your first donations, you can generate annual tax receipts here.
@@ -285,7 +286,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  receiptEmoji: { fontSize: 20 },
   receiptInfo: { flex: 1 },
   receiptYear: { fontSize: 15, fontWeight: '600' },
   receiptAmount: { fontSize: 13, marginTop: 2 },
@@ -311,7 +311,6 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 2,
   },
-  emptyEmoji: { fontSize: 40 },
   emptyTitle: { fontSize: 17, fontWeight: '700' },
   emptyBody: { fontSize: 14, lineHeight: 20, textAlign: 'center' },
 

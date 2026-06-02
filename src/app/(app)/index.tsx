@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -35,8 +36,11 @@ export default function HomeScreen() {
   const [charityCount, setCharityCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   async function loadDashboard() {
+    setError(false);
+    try {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
@@ -61,6 +65,10 @@ export default function HomeScreen() {
     setRecentRoundups((recentRes.data ?? []) as RoundupTransaction[]);
     setCharityCount(charityRes.count ?? 0);
     setLoading(false);
+    } catch {
+      setError(true);
+      setLoading(false);
+    }
   }
 
   const onRefresh = useCallback(async () => {
@@ -96,10 +104,23 @@ export default function HomeScreen() {
             <Text style={[styles.greeting, { color: c.primary }]}>{getGreeting()}, {firstName}</Text>
             <Text style={[styles.headerSub, { color: c.textMuted }]}>Your quiet impact this month.</Text>
           </View>
-          <Pressable style={[styles.notifBtn, { backgroundColor: c.surfaceContainerLow }]}>
-            <Text style={styles.notifIcon}>🔔</Text>
+          <Pressable
+            style={[styles.notifBtn, { backgroundColor: c.surfaceContainerLow }]}
+            onPress={() => router.push('/(app)/settings/notifications')}
+          >
+            <Ionicons name="notifications-outline" size={20} color={c.primary} />
           </Pressable>
         </View>
+
+        {/* Error banner */}
+        {error && (
+          <View style={[styles.pausedBanner, { backgroundColor: c.errorContainer, borderColor: c.error }]}>
+            <Text style={[styles.pausedText, { color: c.error }]}>
+              Could not load dashboard.{' '}
+              <Text style={{ fontWeight: '700', textDecorationLine: 'underline' }} onPress={loadDashboard}>Tap to retry.</Text>
+            </Text>
+          </View>
+        )}
 
         {/* Paused banner */}
         {prefs?.is_paused && (
@@ -128,7 +149,7 @@ export default function HomeScreen() {
           <View style={styles.bentoRow}>
             <View style={[styles.bentoCard, { backgroundColor: c.surfaceWhite }]}>
               <View style={[styles.bentoIcon, { backgroundColor: c.secondaryContainer }]}>
-                <Text>📅</Text>
+                <Ionicons name="calendar-outline" size={20} color={c.primary} />
               </View>
               <Text style={[styles.bentoLabel, { color: c.textMuted }]}>Processing</Text>
               <Text style={[styles.bentoValue, { color: c.primary }]}>
@@ -138,7 +159,7 @@ export default function HomeScreen() {
 
             <View style={[styles.bentoCard, { backgroundColor: c.primary }]}>
               <View style={[styles.bentoIcon, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                <Text>💰</Text>
+                <Ionicons name="wallet-outline" size={20} color={c.onPrimary} />
               </View>
               <Text style={[styles.bentoLabel, { color: c.primaryFixed }]}>Balance</Text>
               <Text style={[styles.bentoValue, { color: c.onPrimary }]}>
@@ -204,7 +225,7 @@ export default function HomeScreen() {
 
             {recentRoundups.length === 0 ? (
               <View style={[styles.emptyState, { backgroundColor: c.surfaceWhite }]}>
-                <Text style={styles.emptyEmoji}>🏦</Text>
+                <Ionicons name="card-outline" size={44} color={c.primary} />
                 <Text style={[styles.emptyTitle, { color: c.onSurface }]}>Connect your bank</Text>
                 <Text style={[styles.emptyBody, { color: c.textMuted }]}>
                   Link your bank or card to start tracking round-ups automatically.
@@ -230,7 +251,7 @@ export default function HomeScreen() {
                     ]}
                   >
                     <View style={[styles.merchantIcon, { backgroundColor: c.surfaceContainerLow }]}>
-                      <Text style={styles.merchantEmoji}>🛍️</Text>
+                      <Ionicons name="bag-outline" size={22} color={c.primary} />
                     </View>
                     <View style={styles.roundupInfo}>
                       <Text style={[styles.merchantName, { color: c.onSurface }]}>
@@ -277,7 +298,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  notifIcon: { fontSize: 18 },
   pausedBanner: {
     marginHorizontal: DesignSpacing.containerMargin,
     padding: 12,
@@ -385,7 +405,6 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 2,
   },
-  emptyEmoji: { fontSize: 40, marginBottom: 4 },
   emptyTitle: { fontSize: 17, fontWeight: '700' },
   emptyBody: { fontSize: 14, lineHeight: 20, textAlign: 'center' },
   emptyBtn: {
@@ -417,7 +436,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  merchantEmoji: { fontSize: 20 },
   roundupInfo: { flex: 1, gap: 2 },
   merchantName: { fontSize: 15, fontWeight: '600' },
   roundupDate: { fontSize: 12 },

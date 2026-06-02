@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert, ActivityIndicator, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -130,7 +131,7 @@ export default function SettingsScreen() {
           {/* Account group */}
           <SettingsGroup title="Account" colors={c}>
             <SettingsRow
-              emoji="👤"
+              icon="person-outline"
               title="Account Information"
               subtitle={profile?.full_name ?? 'Loading…'}
               chevron
@@ -138,7 +139,7 @@ export default function SettingsScreen() {
               colors={c}
             />
             <SettingsRow
-              emoji="🤲"
+              icon="heart-outline"
               title="My Charities"
               subtitle="Edit your nonprofit selections"
               chevron
@@ -146,7 +147,7 @@ export default function SettingsScreen() {
               colors={c}
             />
             <SettingsRow
-              emoji="🏦"
+              icon="card-outline"
               title="Connected Card"
               subtitle={linkedAccounts.length > 0
                 ? `${linkedAccounts[0].institution_name} ••••${linkedAccounts[0].mask}`
@@ -161,7 +162,7 @@ export default function SettingsScreen() {
           {/* Giving */}
           <SettingsGroup title="Giving Activity" colors={c}>
             <SettingsRow
-              emoji="💰"
+              icon="options-outline"
               title="Giving Preferences"
               subtitle={prefs ? `$${prefs.threshold_amount} threshold · $${prefs.monthly_cap}/mo cap` : '—'}
               chevron
@@ -170,7 +171,7 @@ export default function SettingsScreen() {
             />
             <View style={[styles.settingsRow, styles.last]}>
               <View style={[styles.rowIcon, { backgroundColor: c.surfaceContainer }]}>
-                <Text>⏸</Text>
+                <Ionicons name="pause-circle-outline" size={20} color={c.primary} />
               </View>
               <View style={styles.rowInfo}>
                 <Text style={[styles.rowTitle, { color: c.onSurface }]}>Pause Round-ups</Text>
@@ -188,14 +189,14 @@ export default function SettingsScreen() {
           {/* Preferences */}
           <SettingsGroup title="Preferences & Documents" colors={c}>
             <SettingsRow
-              emoji="🔔"
+              icon="notifications-outline"
               title="Notification Preferences"
               chevron
               onPress={() => router.push('/(app)/settings/notifications')}
               colors={c}
             />
             <SettingsRow
-              emoji="🧾"
+              icon="document-text-outline"
               title="Tax Receipts"
               subtitle="Download annual summaries"
               chevron
@@ -208,10 +209,10 @@ export default function SettingsScreen() {
           {/* Support */}
           <SettingsGroup title="Support" colors={c}>
             <SettingsRow
-              emoji="❓"
+              icon="help-circle-outline"
               title="Help & FAQ"
               chevron
-              onPress={() => router.push('/(app)/settings/help')}
+              onPress={() => Linking.openURL('mailto:support@zaytoon.app')}
               colors={c}
               last
             />
@@ -261,8 +262,8 @@ function SettingsGroup({ title, children, colors: c }: { title: string; children
   );
 }
 
-function SettingsRow({ emoji, title, subtitle, chevron, onPress, colors: c, last }: {
-  emoji: string; title: string; subtitle?: string; chevron?: boolean;
+function SettingsRow({ icon, title, subtitle, chevron, onPress, colors: c, last }: {
+  icon: keyof typeof Ionicons.glyphMap; title: string; subtitle?: string; chevron?: boolean;
   onPress: () => void; colors: typeof Colors.light; last?: boolean;
 }) {
   return (
@@ -271,13 +272,13 @@ function SettingsRow({ emoji, title, subtitle, chevron, onPress, colors: c, last
       onPress={onPress}
     >
       <View style={[styles.rowIcon, { backgroundColor: c.surfaceContainer }]}>
-        <Text>{emoji}</Text>
+        <Ionicons name={icon} size={20} color={c.primary} />
       </View>
       <View style={styles.rowInfo}>
         <Text style={[styles.rowTitle, { color: c.onSurface }]}>{title}</Text>
         {subtitle && <Text style={[styles.rowSub, { color: c.textMuted }]}>{subtitle}</Text>}
       </View>
-      {chevron && <Text style={[styles.chevron, { color: c.outline }]}>›</Text>}
+      {chevron && <Ionicons name="chevron-forward" size={20} color={c.outline} />}
     </Pressable>
   );
 }

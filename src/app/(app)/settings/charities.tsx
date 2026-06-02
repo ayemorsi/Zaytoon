@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import type { Nonprofit } from '@/types/app.types';
+import { Ionicons } from '@expo/vector-icons';
 
 const CAUSE_LABELS: Record<string, string> = {
   food: 'Food', medical: 'Medical', education: 'Education',
@@ -121,7 +122,7 @@ export default function EditCharitiesScreen() {
       {/* Header */}
       <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+          <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
         </Pressable>
         <Text style={[styles.navTitle, { color: c.onSurface }]}>My Charities</Text>
         <View style={{ width: 60 }} />

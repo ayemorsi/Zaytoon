@@ -1,8 +1,9 @@
-import { View, Text, StyleSheet, ScrollView, Pressable, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -29,24 +30,34 @@ export default function NonprofitsScreen() {
   const c = Colors[scheme];
   const router = useRouter();
 
-  const [nonprofits, setNonprofits] = useState<Nonprofit[]>(SEED);
+  const [nonprofits, setNonprofits] = useState<Nonprofit[]>([]);
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [userSelections, setUserSelections] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function load() {
+  async function load() {
+    setError(false);
+    setLoading(true);
+    try {
       const [npRes, userRes] = await Promise.all([
         supabase.from('nonprofits').select('*').eq('is_active', true).eq('is_verified', true),
         supabase.auth.getUser().then(({ data: { user } }) =>
           user ? supabase.from('user_charity_allocations').select('nonprofit_id').eq('user_id', user.id) : Promise.resolve({ data: [] })
         ),
       ]);
-      if (npRes.data && npRes.data.length > 0) setNonprofits(npRes.data as Nonprofit[]);
+      if (npRes.error) throw npRes.error;
+      setNonprofits((npRes.data ?? []) as Nonprofit[]);
       setUserSelections((userRes.data ?? []).map((r: any) => r.nonprofit_id));
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-    load();
-  }, []);
+  }
+
+  useEffect(() => { load(); }, []);
 
   async function toggleSelection(npId: string) {
     const { data: { user } } = await supabase.auth.getUser();
@@ -78,7 +89,7 @@ export default function NonprofitsScreen() {
         <View style={styles.content}>
           {/* Search */}
           <View style={[styles.searchBar, { backgroundColor: c.surfaceWhite, borderColor: c.outlineVariant }]}>
-            <Text style={styles.searchIcon}>🔍</Text>
+            <Ionicons name="search-outline" size={18} color={c.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: c.onSurface }]}
               placeholder="Search nonprofits…"
@@ -98,6 +109,16 @@ export default function NonprofitsScreen() {
             </View>
           </ScrollView>
 
+          {/* Error / loading states */}
+          {error && (
+            <Pressable style={[styles.errorBanner, { backgroundColor: c.errorContainer }]} onPress={load}>
+              <Text style={[styles.errorText, { color: c.error }]}>Could not load nonprofits. Tap to retry.</Text>
+            </Pressable>
+          )}
+          {loading && !error && (
+            <ActivityIndicator color={c.primary} style={{ marginTop: 24 }} />
+          )}
+
           {/* Nonprofit list */}
           <View style={styles.list}>
             {filtered.map((np) => {
@@ -106,12 +127,12 @@ export default function NonprofitsScreen() {
                 <Pressable key={np.id} style={[styles.card, { backgroundColor: c.surfaceWhite, borderColor: isSelected ? c.primary : c.outlineVariant }]} onPress={() => router.push(`/(app)/nonprofits/${np.id}`)}>
                   <View style={styles.cardHeader}>
                     <View style={[styles.logo, { backgroundColor: c.surfaceContainerHigh }]}>
-                      <Text style={styles.logoEmoji}>🤲</Text>
+                      <Ionicons name="heart-outline" size={24} color={c.primary} />
                     </View>
                     <View style={styles.cardInfo}>
                       <View style={styles.nameRow}>
                         <Text style={[styles.cardName, { color: c.primary }]} numberOfLines={1}>{np.name}</Text>
-                        {np.is_verified && <Text style={[styles.verifiedBadge, { color: c.warningAmber }]}>★ Verified</Text>}
+                        {np.is_verified && <View style={styles.verifiedRow}><Ionicons name="checkmark-circle" size={14} color={c.warningAmber} /><Text style={[styles.verifiedBadge, { color: c.warningAmber }]}>Verified</Text></View>}
                       </View>
                       <View style={styles.tags}>
                         {(np.cause_categories ?? []).slice(0, 3).map((cat) => (
@@ -185,7 +206,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     borderWidth: 1,
   },
-  searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, fontSize: 16 },
   filterScroll: { marginHorizontal: -DesignSpacing.containerMargin },
   filterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: DesignSpacing.containerMargin, paddingBottom: 4 },
@@ -206,10 +226,10 @@ const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   logo: { width: 48, height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  logoEmoji: { fontSize: 22 },
   cardInfo: { flex: 1, gap: 4 },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
   cardName: { fontSize: 16, fontWeight: '700', flex: 1 },
+  verifiedRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   verifiedBadge: { fontSize: 12, fontWeight: '700' },
   tags: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
   tag: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
@@ -224,4 +244,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   selectBtnText: { fontSize: 14, fontWeight: '700', letterSpacing: 0.2 },
+  errorBanner: { padding: 14, borderRadius: BorderRadius.lg },
+  errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
 });

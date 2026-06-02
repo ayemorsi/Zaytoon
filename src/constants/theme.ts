@@ -5,16 +5,16 @@ import { Platform } from 'react-native';
 // Zaytoon Design System — matches the web design system color tokens exactly
 export const Colors = {
   light: {
-    // Core surfaces
-    surface: '#f6fbf4',
-    surfaceContainerLow: '#f0f5ee',
-    surfaceContainer: '#ebefe8',
-    surfaceContainerHigh: '#e5e9e3',
-    surfaceContainerHighest: '#dfe4dd',
-    surfaceVariant: '#dfe4dd',
-    surfaceWhite: '#FFFFFF',
-    surfaceDim: '#d7dbd5',
-    backgroundWarm: '#F8F4EA',
+    // Core surfaces — warm cream base matching brand guide
+    surface: '#F0EBE1',
+    surfaceContainerLow: '#EAE4D8',
+    surfaceContainer: '#E4DECE',
+    surfaceContainerHigh: '#DDD7C6',
+    surfaceContainerHighest: '#D6CFBC',
+    surfaceVariant: '#D6CFBC',
+    surfaceWhite: '#FDFAF5',
+    surfaceDim: '#C8C1AF',
+    backgroundWarm: '#F0EBE1',
 
     // Primary (Deep Olive Green)
     primary: '#284726',
@@ -55,7 +55,8 @@ export const Colors = {
 
     // Semantic
     successFresh: '#4CAF50',
-    warningAmber: '#F5B942',
+    warningAmber: '#C49A38',
+    terracotta: '#C4623A',
 
     // Inverse
     inverseSurface: '#2d322d',
@@ -64,11 +65,11 @@ export const Colors = {
 
     // Legacy aliases for existing components
     text: '#181d19',
-    background: '#f6fbf4',
-    backgroundElement: '#ebefe8',
+    background: '#F0EBE1',
+    backgroundElement: '#E4DECE',
     backgroundSelected: '#d4e5c5',
     textSecondary: '#6F766D',
-    card: '#FFFFFF',
+    card: '#FDFAF5',
     border: '#c3c8bd',
     danger: '#ba1a1a',
   },
@@ -116,15 +117,16 @@ export const Colors = {
     onErrorContainer: '#ffb4ab',
 
     successFresh: '#66BB6A',
-    warningAmber: '#F5B942',
+    warningAmber: '#D4AA48',
+    terracotta: '#D4724A',
 
     inverseSurface: '#dde5db',
     inverseOnSurface: '#2d322d',
     inversePrimary: '#284726',
 
     text: '#dde5db',
-    background: '#0e1410',
-    backgroundElement: '#1a221a',
+    background: '#131008',
+    backgroundElement: '#1e1b12',
     backgroundSelected: '#3c4b33',
     textSecondary: '#9aa196',
     card: '#1a221a',

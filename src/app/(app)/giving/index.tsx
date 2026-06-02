@@ -2,6 +2,7 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -17,9 +18,11 @@ export default function GivingScreen() {
   const [roundups, setRoundups] = useState<RoundupTransaction[]>([]);
   const [batches, setBatches] = useState<DonationBatch[]>([]);
   const [monthlyTotal, setMonthlyTotal] = useState(0);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function load() {
+  async function load() {
+    setError(false);
+    try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
@@ -36,9 +39,12 @@ export default function GivingScreen() {
       setBatches((batchRes.data ?? []) as DonationBatch[]);
       const total = (monthRes.data ?? []).reduce((s: number, d: any) => s + d.amount, 0);
       setMonthlyTotal(Math.round(total * 100) / 100);
+    } catch {
+      setError(true);
     }
-    load();
-  }, []);
+  }
+
+  useEffect(() => { load(); }, []);
 
   const pendingBalance = roundups
     .filter((r) => r.status === 'pending')
@@ -51,6 +57,17 @@ export default function GivingScreen() {
           <Text style={[styles.title, { color: c.onSurface }]}>Giving History</Text>
           <Text style={[styles.subtitle, { color: c.textMuted }]}>Track your everyday impact.</Text>
         </View>
+
+        {error && (
+          <Pressable
+            style={[styles.errorBanner, { backgroundColor: c.errorContainer }]}
+            onPress={load}
+          >
+            <Text style={[styles.errorText, { color: c.error }]}>
+              Could not load giving history. Tap to retry.
+            </Text>
+          </Pressable>
+        )}
 
         {/* Summary Card */}
         <View style={styles.content}>
@@ -108,7 +125,7 @@ export default function GivingScreen() {
                       style={[styles.txRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.surfaceContainerHigh }]}
                     >
                       <View style={[styles.txIcon, { backgroundColor: c.secondaryContainer }]}>
-                        <Text>🛍️</Text>
+                        <Ionicons name="bag-outline" size={22} color={c.primary} />
                       </View>
                       <View style={styles.txInfo}>
                         <Text style={[styles.txName, { color: c.onSurface }]}>{tx.merchant_name ?? 'Purchase'}</Text>
@@ -146,7 +163,7 @@ export default function GivingScreen() {
                       style={[styles.txRow, i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: c.surfaceContainerHigh }]}
                     >
                       <View style={[styles.txIcon, { backgroundColor: c.tertiaryFixed }]}>
-                        <Text>✅</Text>
+                        <Ionicons name="checkmark-circle" size={22} color={c.successFresh} />
                       </View>
                       <View style={styles.txInfo}>
                         <Text style={[styles.txName, { color: c.onSurface }]}>
@@ -169,7 +186,7 @@ export default function GivingScreen() {
 
           {/* Fee explanation */}
           <View style={[styles.infoNote, { backgroundColor: c.surfaceContainerLow }]}>
-            <Text style={styles.infoIcon}>ℹ️</Text>
+            <Ionicons name="information-circle-outline" size={18} color={c.textMuted} />
             <Text style={[styles.infoText, { color: c.textMuted }]}>
               Round-ups are grouped and processed together to maximize the sadaqah that reaches your chosen causes.
             </Text>
@@ -269,6 +286,12 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xl,
     alignItems: 'flex-start',
   },
-  infoIcon: { fontSize: 14 },
   infoText: { flex: 1, fontSize: 13, lineHeight: 18 },
+  errorBanner: {
+    marginHorizontal: DesignSpacing.containerMargin,
+    padding: 12,
+    borderRadius: BorderRadius.lg,
+    marginBottom: 4,
+  },
+  errorText: { fontSize: 13, fontWeight: '600', textAlign: 'center' },
 });

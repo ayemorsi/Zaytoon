@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
@@ -21,9 +22,15 @@ const CAUSE_LABELS: Record<string, string> = {
   clean_water: 'Clean Water', refugees: 'Refugees',
 };
 
-const CAUSE_EMOJIS: Record<string, string> = {
-  food: '🍽️', medical: '🏥', education: '📚', disaster_relief: '🆘',
-  masjids: '🕌', orphans: '👶', clean_water: '💧', refugees: '🏠',
+const CAUSE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  food: 'restaurant-outline',
+  medical: 'medkit-outline',
+  education: 'book-outline',
+  disaster_relief: 'warning-outline',
+  masjids: 'business-outline',
+  orphans: 'people-outline',
+  clean_water: 'water-outline',
+  refugees: 'home-outline',
 };
 
 // Seed data fallback (matches seeds in nonprofits/index.tsx)
@@ -100,7 +107,7 @@ export default function NonprofitDetailScreen() {
       <SafeAreaView style={[styles.safe, { backgroundColor: c.surface }]}>
         <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+            <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
           </Pressable>
         </View>
         <ActivityIndicator color={c.primary} style={{ marginTop: 48 }} />
@@ -113,7 +120,7 @@ export default function NonprofitDetailScreen() {
       <SafeAreaView style={[styles.safe, { backgroundColor: c.surface }]}>
         <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+            <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
           </Pressable>
         </View>
         <Text style={[styles.errorText, { color: c.textMuted }]}>Nonprofit not found.</Text>
@@ -128,7 +135,7 @@ export default function NonprofitDetailScreen() {
       {/* Header */}
       <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+          <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
         </Pressable>
         <Text style={[styles.navTitle, { color: c.onSurface }]} numberOfLines={1}>
           {nonprofit.name}
@@ -150,7 +157,7 @@ export default function NonprofitDetailScreen() {
               </View>
               {nonprofit.is_verified && (
                 <View style={[styles.verifiedBadge, { backgroundColor: c.tertiaryFixed }]}>
-                  <Text style={styles.verifiedText}>★ 501(c)(3) Verified</Text>
+                  <View style={{flexDirection:'row',alignItems:'center',gap:4}}><Ionicons name="shield-checkmark-outline" size={13} color="#7a5400" /><Text style={styles.verifiedText}>501(c)(3) Verified</Text></View>
                 </View>
               )}
             </View>
@@ -161,7 +168,7 @@ export default function NonprofitDetailScreen() {
             <View style={styles.tags}>
               {(nonprofit.cause_categories ?? []).map((cat) => (
                 <View key={cat} style={[styles.tag, { backgroundColor: c.surfaceContainer }]}>
-                  <Text style={styles.tagEmoji}>{CAUSE_EMOJIS[cat] ?? '🤲'}</Text>
+                  <Ionicons name={CAUSE_ICONS[cat] ?? 'heart-outline'} size={13} color={c.textMuted} />
                   <Text style={[styles.tagText, { color: c.onSurface }]}>
                     {CAUSE_LABELS[cat] ?? cat}
                   </Text>
@@ -190,7 +197,7 @@ export default function NonprofitDetailScreen() {
           <Text style={[styles.sectionTitle, { color: c.primary }]}>Trust & Transparency</Text>
           {nonprofit.ein && (
             <View style={styles.trustRow}>
-              <Text style={styles.trustEmoji}>📄</Text>
+              <Ionicons name="document-outline" size={22} color={c.primary} />
               <View style={styles.trustInfo}>
                 <Text style={[styles.trustLabel, { color: c.onSurface }]}>EIN</Text>
                 <Text style={[styles.trustValue, { color: c.textMuted }]}>{nonprofit.ein}</Text>
@@ -198,7 +205,7 @@ export default function NonprofitDetailScreen() {
             </View>
           )}
           <View style={styles.trustRow}>
-            <Text style={styles.trustEmoji}>✅</Text>
+            <Ionicons name="shield-checkmark-outline" size={22} color={c.successFresh} />
             <View style={styles.trustInfo}>
               <Text style={[styles.trustLabel, { color: c.onSurface }]}>Verification Status</Text>
               <Text style={[styles.trustValue, { color: c.textMuted }]}>
@@ -207,7 +214,7 @@ export default function NonprofitDetailScreen() {
             </View>
           </View>
           <View style={[styles.trustRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.trustEmoji}>🇺🇸</Text>
+            <Ionicons name="flag-outline" size={22} color={c.primary} />
             <View style={styles.trustInfo}>
               <Text style={[styles.trustLabel, { color: c.onSurface }]}>Country</Text>
               <Text style={[styles.trustValue, { color: c.textMuted }]}>United States</Text>
@@ -221,9 +228,9 @@ export default function NonprofitDetailScreen() {
             style={[styles.websiteBtn, { backgroundColor: c.surfaceWhite, borderColor: c.outlineVariant }]}
             onPress={() => Linking.openURL(nonprofit.website_url!)}
           >
-            <Text style={styles.websiteEmoji}>🌐</Text>
+            <Ionicons name="globe-outline" size={22} color={c.primary} />
             <Text style={[styles.websiteText, { color: c.primary }]}>Visit their website</Text>
-            <Text style={[styles.websiteArrow, { color: c.primary }]}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={c.primary} />
           </Pressable>
         )}
 
@@ -247,12 +254,12 @@ export default function NonprofitDetailScreen() {
           {toggling
             ? <ActivityIndicator color={isSupporting ? c.primary : c.onPrimary} />
             : (
-              <Text style={[
-                styles.supportBtnText,
-                { color: isSupporting ? c.primary : c.onPrimary },
-              ]}>
-                {isSupporting ? '✓ Supporting — Tap to remove' : 'Add to My Giving'}
-              </Text>
+              <View style={{flexDirection:'row',alignItems:'center',gap:6}}>
+                {isSupporting && <Ionicons name="checkmark-circle" size={18} color={c.primary} />}
+                <Text style={[styles.supportBtnText, { color: isSupporting ? c.primary : c.onPrimary }]}>
+                  {isSupporting ? 'Supporting — Tap to remove' : 'Add to My Giving'}
+                </Text>
+              </View>
             )
           }
         </Pressable>
@@ -323,7 +330,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     borderRadius: BorderRadius.full,
   },
-  tagEmoji: { fontSize: 13 },
   tagText: { fontSize: 12, fontWeight: '600' },
   section: {
     borderRadius: BorderRadius.xxl,
@@ -345,7 +351,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.06)',
   },
-  trustEmoji: { fontSize: 20 },
   trustInfo: { flex: 1 },
   trustLabel: { fontSize: 14, fontWeight: '600' },
   trustValue: { fontSize: 13, marginTop: 2 },
@@ -357,9 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.xxl,
     borderWidth: 1,
   },
-  websiteEmoji: { fontSize: 20 },
   websiteText: { flex: 1, fontSize: 15, fontWeight: '600' },
-  websiteArrow: { fontSize: 22, fontWeight: '300' },
   errorText: { textAlign: 'center', marginTop: 48, fontSize: 16 },
   stickyFooter: {
     position: 'absolute',

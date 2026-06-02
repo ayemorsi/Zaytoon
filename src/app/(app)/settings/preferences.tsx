@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
 import type { ThresholdAmount, DonationSchedule } from '@/types/app.types';
+import { Ionicons } from '@expo/vector-icons';
 
 const THRESHOLD_OPTIONS: ThresholdAmount[] = [5, 10, 25];
 const CAP_OPTIONS = [10, 25, 50, 100];
@@ -74,7 +75,7 @@ export default function EditPreferencesScreen() {
       {/* Header */}
       <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+          <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
         </Pressable>
         <Text style={[styles.navTitle, { color: c.onSurface }]}>Giving Preferences</Text>
         <View style={{ width: 60 }} />

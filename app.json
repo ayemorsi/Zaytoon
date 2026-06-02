@@ -12,6 +12,9 @@
       "bundleIdentifier": "com.zaytoon.app",
       "buildNumber": "1",
       "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
       "privacyManifests": {
         "NSPrivacyAccessedAPITypes": [
           {
@@ -89,6 +92,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c81168bd-6b8d-4c0a-90f2-d40f9e7016f0"
+      }
     }
   }
 }

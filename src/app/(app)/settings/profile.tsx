@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function ProfileScreen() {
   const scheme = useColorScheme() ?? 'light';
@@ -60,7 +61,7 @@ export default function ProfileScreen() {
       {/* Header */}
       <View style={[styles.topBar, { borderBottomColor: c.outlineVariant }]}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={[styles.backText, { color: c.primary }]}>‹ Back</Text>
+          <View style={{flexDirection:'row',alignItems:'center',gap:2}}><Ionicons name="chevron-back" size={22} color={c.primary} /><Text style={[styles.backText, { color: c.primary }]}>Back</Text></View>
         </Pressable>
         <Text style={[styles.navTitle, { color: c.onSurface }]}>Account Information</Text>
         <View style={{ width: 60 }} />

@@ -14,6 +14,7 @@ import { useState } from 'react';
 
 import { Colors, DesignSpacing, BorderRadius } from '@/constants/theme';
 import { supabase } from '@/lib/supabase';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SignupScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function SignupScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Text style={[styles.backText, { color: c.onSurfaceVariant }]}>←</Text>
+          <Ionicons name="arrow-back" size={24} color={c.onSurfaceVariant} />
         </Pressable>
 
         <Text style={[styles.title, { color: c.primary }]}>Create account</Text>
