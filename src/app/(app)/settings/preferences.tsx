@@ -55,7 +55,7 @@ export default function EditPreferencesScreen() {
         monthly_cap: monthlyCap,
         schedule,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'user_id' });
     }
     setSaving(false);
     setSaved(true);
