@@ -1,10 +1,19 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { Appearance, useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
 
 // Force light mode — brand uses warm cream backgrounds
 Appearance.setColorScheme('light');
+
+const ZaytoonTheme = {
+  ...DefaultTheme,
+  colors: {
+    ...DefaultTheme.colors,
+    background: '#F0EBE1',
+    card: '#FDFAF5',
+  },
+};
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';
@@ -29,7 +38,7 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <ThemeProvider value={ZaytoonTheme}>
         <AuthGate />
       </ThemeProvider>
     </QueryClientProvider>
