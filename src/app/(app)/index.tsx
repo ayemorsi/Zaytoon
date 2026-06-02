@@ -34,6 +34,7 @@ export default function HomeScreen() {
   const [totalDonated, setTotalDonated] = useState(0);
   const [recentRoundups, setRecentRoundups] = useState<RoundupTransaction[]>([]);
   const [charityCount, setCharityCount] = useState(0);
+  const [hasLinkedAccount, setHasLinkedAccount] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -44,13 +45,14 @@ export default function HomeScreen() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    const [profileRes, prefsRes, pendingRes, totalRes, recentRes, charityRes] = await Promise.all([
+    const [profileRes, prefsRes, pendingRes, totalRes, recentRes, charityRes, linkedRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
       supabase.from('donation_preferences').select('*').eq('user_id', user.id).single(),
       supabase.from('roundup_transactions').select('roundup_amount').eq('user_id', user.id).eq('status', 'pending'),
       supabase.from('donations').select('amount').eq('user_id', user.id).eq('status', 'completed'),
       supabase.from('roundup_transactions').select('*').eq('user_id', user.id).order('transacted_at', { ascending: false }).limit(10),
       supabase.from('user_charity_allocations').select('id', { count: 'exact' }).eq('user_id', user.id),
+      supabase.from('linked_accounts').select('id', { count: 'exact' }).eq('user_id', user.id).eq('is_active', true),
     ]);
 
     if (profileRes.data) setProfile(profileRes.data as Profile);
@@ -64,6 +66,7 @@ export default function HomeScreen() {
 
     setRecentRoundups((recentRes.data ?? []) as RoundupTransaction[]);
     setCharityCount(charityRes.count ?? 0);
+    setHasLinkedAccount((linkedRes.count ?? 0) > 0);
     setLoading(false);
     } catch {
       setError(true);
@@ -230,17 +233,29 @@ export default function HomeScreen() {
 
             {recentRoundups.length === 0 ? (
               <View style={[styles.emptyState, { backgroundColor: c.surfaceWhite }]}>
-                <Ionicons name="card-outline" size={44} color={c.primary} />
-                <Text style={[styles.emptyTitle, { color: c.onSurface }]}>Connect your bank</Text>
-                <Text style={[styles.emptyBody, { color: c.textMuted }]}>
-                  Link your bank or card to start tracking round-ups automatically.
-                </Text>
-                <Pressable
-                  style={[styles.emptyBtn, { backgroundColor: c.primary }]}
-                  onPress={() => router.push('/(app)/settings/linked-accounts')}
-                >
-                  <Text style={[styles.emptyBtnText, { color: c.onPrimary }]}>Connect Account</Text>
-                </Pressable>
+                {hasLinkedAccount ? (
+                  <>
+                    <Ionicons name="checkmark-circle" size={44} color={c.successFresh} />
+                    <Text style={[styles.emptyTitle, { color: c.onSurface }]}>Bank connected</Text>
+                    <Text style={[styles.emptyBody, { color: c.textMuted }]}>
+                      Your account is linked. Round-ups will appear here as you make purchases.
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons name="card-outline" size={44} color={c.primary} />
+                    <Text style={[styles.emptyTitle, { color: c.onSurface }]}>Connect your bank</Text>
+                    <Text style={[styles.emptyBody, { color: c.textMuted }]}>
+                      Link your bank or card to start tracking round-ups automatically.
+                    </Text>
+                    <Pressable
+                      style={[styles.emptyBtn, { backgroundColor: c.primary }]}
+                      onPress={() => router.push('/(app)/settings/linked-accounts')}
+                    >
+                      <Text style={[styles.emptyBtnText, { color: c.onPrimary }]}>Connect Account</Text>
+                    </Pressable>
+                  </>
+                )}
               </View>
             ) : (
               <View style={[styles.roundupList, { backgroundColor: c.surfaceWhite }]}>
