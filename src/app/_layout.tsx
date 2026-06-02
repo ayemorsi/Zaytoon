@@ -1,7 +1,10 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Slot, useRouter, useSegments } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 import { useEffect, useState } from 'react';
+
+// Force light mode — brand uses warm cream backgrounds
+Appearance.setColorScheme('light');
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 import { supabase } from '@/lib/supabase';

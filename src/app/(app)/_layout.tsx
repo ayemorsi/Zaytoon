@@ -60,6 +60,16 @@ export default function AppTabs() {
           tabBarIcon: ({ color, size }) => <Ionicons name="settings" size={size} color={color} />,
         }}
       />
+
+      {/* Hide all sub-screens from the tab bar */}
+      <Tabs.Screen name="nonprofits/[id]" options={{ href: null }} />
+      <Tabs.Screen name="settings/profile" options={{ href: null }} />
+      <Tabs.Screen name="settings/charities" options={{ href: null }} />
+      <Tabs.Screen name="settings/linked-accounts" options={{ href: null }} />
+      <Tabs.Screen name="settings/notifications" options={{ href: null }} />
+      <Tabs.Screen name="settings/preferences" options={{ href: null }} />
+      <Tabs.Screen name="settings/tax-receipts" options={{ href: null }} />
+      <Tabs.Screen name="settings/help" options={{ href: null }} />
     </Tabs>
   );
 }
