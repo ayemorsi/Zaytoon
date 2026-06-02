@@ -16,8 +16,9 @@ export default function AppTabs() {
         tabBarInactiveTintColor: c.textMuted,
         tabBarStyle: {
           backgroundColor: c.surfaceWhite,
-          borderTopColor: c.outlineVariant,
-          borderTopWidth: 1,
+          borderTopWidth: 0,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarLabelStyle: {
           fontSize: 11,
