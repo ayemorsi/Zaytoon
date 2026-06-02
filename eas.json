@@ -15,12 +15,22 @@
     },
     "preview": {
       "distribution": "internal",
+      "channel": "preview",
       "env": {
         "EXPO_PUBLIC_PLAID_ENV": "sandbox"
       }
     },
     "production": {
       "autoIncrement": true,
+      "distribution": "store",
+      "channel": "production",
+      "ios": {
+        "credentialsSource": "remote"
+      },
+      "android": {
+        "credentialsSource": "remote",
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_PLAID_ENV": "production"
       }
